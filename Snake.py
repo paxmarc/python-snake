@@ -6,6 +6,8 @@ A remake of the classic phone game, written in Python using the Pygame library.
 
 Credits: load_image and load_sound helper functions taken (for convenience) from: http://www.pygame.org/docs/tut/chimp/ChimpLineByLine.html (found in helper.py)
 
+All remaining images and code: Marcus Paxton
+
 Marcus Paxton, February 2015
 
 """
@@ -46,24 +48,36 @@ class SnakeMain:
                             or (event.key == K_DOWN)
                             or (event.key == K_UP)):
                         self.snake.change_direction(event.key)
+                    elif event.key == K_q ^ KMOD_LCTRL:
+                        sys.exit()
 
             """TODO: make the snake move depending on the direction of the Snake Class"""
             self.snake.move()
 
             """Generate pellet position (need to load pellet sprite as well)"""
             self.screen.blit(self.background, (0,0))
+            self.walls.draw(self.screen)
             self.snake.segments.draw(self.screen)
             pygame.display.flip()
             pygame.time.delay(100)
 
     def load_sprites(self):
-        """Load up the sprites needed for the game"""
+        """Load up the sprites needed for the snake"""
         snake_segments = pygame.sprite.Group()
         segment_positions = []
         for i in range(0, 4):
             snake_segments.add(SnakeSegment(i, pygame.Rect(100 - (10 * i), self.height / 2, 10, 10)))
             segment_positions.append(SegmentPosition(100 - (10 * i), self.height / 2))
         self.snake = Snake(snake_segments, segment_positions)
+        
+        """Load in the walls"""
+        self.walls = pygame.sprite.Group()
+        width_divs = self.width / 10
+        height_divs = self.height / 10
+        for i in range(0, width_divs):
+            for j in range(0, height_divs):
+                if i == 0 or j == 0 or i == width_divs - 1 or j == height_divs - 1:
+                    self.walls.add(Wall(pygame.Rect(i * 10, j * 10, 10, 10)))
 
 
 class Snake:
@@ -110,21 +124,20 @@ class Snake:
                 self.positions[length - 1 - i].x = self.positions[length - 2 - i].x
                 self.positions[length - 1 - i].y = self.positions[length - 2 - i].y
 
-        print self.positions
+        # print self.positions
 
         for segment in self.segments.sprites():
-            print segment.seg_id
             segment.rect = pygame.Rect(self.positions[segment.seg_id].x, self.positions[segment.seg_id].y, 10, 10)
 
 
 class SegmentPosition:
-
+    """Data structure to store 2D position of a snake segment within the game area"""
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
     def __repr__(self):
-        return "%d, %d" % (self.x, self.y)
+        return "[%d, %d]" % (self.x, self.y)
 
 
 
@@ -137,6 +150,16 @@ class SnakeSegment(pygame.sprite.Sprite):
         if rect != None:
             self.rect = rect
         self.seg_id = seg_id
+
+class Wall(pygame.sprite.Sprite):
+    """Wall segments, mark the boundary of the game area"""
+
+    def __init__(self, rect=None):
+        pygame.sprite.Sprite.__init__(self)
+        self.image, self.rect = load_image('wall.png')
+        if rect != None:
+            self.rect = rect
+
 
 if __name__ == "__main__":
     MainWindow = SnakeMain()
