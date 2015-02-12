@@ -58,7 +58,7 @@ class SnakeMain:
             self.render_score()
 
             self.screen.blit(self.background, (0,0))
-            self.screen.blit(self.render_score(), pygame.Rect(0, 480, 50, 640))
+            self.screen.blit(self.render_score(), pygame.Rect(10, 480, 50, 320))
             self.walls.draw(self.screen)
             self.snake.snake_head.draw(self.screen)
             self.snake.segments.draw(self.screen)
@@ -106,11 +106,23 @@ class SnakeMain:
 
 
     def end_game(self, end_code):
-        if end_code == 1:
-            print "Walls hit"
-        elif end_code == 2:
-            print "Snake hit"
-        sys.exit()
+        self.screen.blit(self.background, (0,0))
+        self.screen.blit(self.render_score(), pygame.Rect(10, 480, 50, 320))
+        end_text = self.render_end(end_code)
+        self.screen.blit(end_text, pygame.Rect(325, 485, 25, 320))
+        quit_text = self.render_quit_message()
+        self.screen.blit(quit_text, pygame.Rect(325, 510, 25, 320))
+        
+        self.walls.draw(self.screen)
+        pygame.display.flip()
+
+        while 1:
+            for event in pygame.event.get():
+                if event.type == KEYDOWN:
+                    if event.key == K_q:
+                        sys.exit()
+
+            
 
     def generate_pellet(self):
         while 1:
@@ -128,6 +140,20 @@ class SnakeMain:
         score_text = "Score: " + str(self.score)
         font = pygame.font.SysFont(None, 76)
         return font.render(score_text, True, (77, 146, 28))
+
+    def render_end(self, end_code):
+        end_text = None
+        if (end_code == 1):
+            end_text = "Game over - hit a wall!"
+        elif (end_code == 2):
+            end_text = "Game over - hit yourself!"
+
+        font = pygame.font.SysFont(None, 24)
+        return font.render(end_text, True, (77, 146, 28))
+
+    def render_quit_message(self):
+        font = pygame.font.SysFont(None, 24)
+        return font.render("Press Q to exit.", True, (77, 146, 28))
                     
 
 
@@ -215,7 +241,7 @@ class Snake:
 
 
 class SegmentPosition:
-    """Data structure to store 2D position of a snake segment within the game area"""
+    """Data structure to store 2D position within the game area"""
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -245,7 +271,7 @@ class Wall(pygame.sprite.Sprite):
             self.rect = rect
 
 class Pellet(pygame.sprite.Sprite):
-
+    """Pellet sprite"""
     def __init__(self, rect):
         pygame.sprite.Sprite.__init__(self)
         self.image, self.rect = load_image('pellet.png', -1)
