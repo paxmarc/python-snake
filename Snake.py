@@ -49,8 +49,6 @@ class SnakeMain:
                         self.snake.change_direction(event.key)
                     elif event.key == K_q ^ KMOD_LCTRL:
                         sys.exit()
-                    elif event.key == K_SPACE:
-                        self.snake.grow()
 
             """make the snake move depending on the direction of the Snake Class"""
             self.snake.move()
