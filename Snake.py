@@ -4,7 +4,8 @@
 **************
 A remake of the classic phone game, written in Python using the Pygame library.
 
-Credits: load_image and load_sound helper functions taken (for convenience) from: http://www.pygame.org/docs/tut/chimp/ChimpLineByLine.html (found in helper.py)
+Credits: load_image and load_sound helper functions taken (for convenience) from:
+http://www.pygame.org/docs/tut/chimp/ChimpLineByLine.html (found in helper.py)
 
 All remaining images and code: Marcus Paxton
 
@@ -32,6 +33,7 @@ class SnakeMain:
 
     def main_loop(self):
         self.load_sprites()
+        self.clock = pygame.time.Clock()
 
         self.background = pygame.Surface(self.screen.get_size())
         self.background = self.background.convert()
@@ -50,25 +52,32 @@ class SnakeMain:
                         self.snake.change_direction(event.key)
                     elif event.key == K_q ^ KMOD_LCTRL:
                         sys.exit()
+                    elif event.key == K_SPACE:
+                        self.snake.grow()
 
-            """TODO: make the snake move depending on the direction of the Snake Class"""
+            """make the snake move depending on the direction of the Snake Class"""
             self.snake.move()
+            self.test_collision()
 
-            """Generate pellet position (need to load pellet sprite as well)"""
+            """TODO: Generate pellet position (need to load pellet sprite as well)"""
             self.screen.blit(self.background, (0,0))
             self.walls.draw(self.screen)
+            self.snake.snake_head.draw(self.screen)
             self.snake.segments.draw(self.screen)
             pygame.display.flip()
-            pygame.time.delay(100)
+            self.clock.tick(24)
+
 
     def load_sprites(self):
         """Load up the sprites needed for the snake"""
+        snake_head = pygame.sprite.RenderPlain(SnakeSegment(0, pygame.Rect(100, self.height / 2, 10, 10)))
         snake_segments = pygame.sprite.Group()
         segment_positions = []
-        for i in range(0, 4):
+        segment_positions.append(SegmentPosition(100, self.height/2))
+        for i in range(1, 5):
             snake_segments.add(SnakeSegment(i, pygame.Rect(100 - (10 * i), self.height / 2, 10, 10)))
             segment_positions.append(SegmentPosition(100 - (10 * i), self.height / 2))
-        self.snake = Snake(snake_segments, segment_positions)
+        self.snake = Snake(snake_head, snake_segments, segment_positions)
         
         """Load in the walls"""
         self.walls = pygame.sprite.Group()
@@ -79,10 +88,24 @@ class SnakeMain:
                 if i == 0 or j == 0 or i == width_divs - 1 or j == height_divs - 1:
                     self.walls.add(Wall(pygame.Rect(i * 10, j * 10, 10, 10)))
 
+    def test_collision(self):
+        """Test for collision with walls, as well as other parts of the snake"""
+        if len(pygame.sprite.groupcollide(self.snake.snake_head, self.walls, False, False)) > 0:
+            self.end_game(1)
+        elif len(pygame.sprite.groupcollide(self.snake.snake_head, self.snake.segments, False, False)) > 0:
+            self.end_game(2)
+
+    def end_game(self, end_code):
+        if end_code == 1:
+            print "Walls hit"
+        elif end_code == 2:
+            print "Snake hit"
+        sys.exit()
 
 class Snake:
-    def __init__(self, snake_segments, segment_positions):
+    def __init__(self, snake_head, snake_segments, segment_positions):
         """initialize the snake, starts with 5 segments, increases by 1 every time you collect a pellet"""
+        self.snake_head = snake_head
         self.current_size = 5
         self.direction = "right"
         self.segments = snake_segments
@@ -90,13 +113,13 @@ class Snake:
 
     def change_direction(self, key):
         """Change the direction of the snake, using one of the 4 directional keys"""
-        if (key == K_RIGHT and self.direction != "left"):
+        if (key == K_RIGHT and self.direction != "left" and self.check_y_axis()):
             self.direction = "right"
-        elif (key == K_LEFT and self.direction != "right"):
+        elif (key == K_LEFT and self.direction != "right" and self.check_y_axis()):
             self.direction = "left"
-        elif (key == K_UP and self.direction != "down"):
+        elif (key == K_UP and self.direction != "down" and self.check_x_axis()):
             self.direction = "up"
-        elif (key == K_DOWN and self.direction != "up"):
+        elif (key == K_DOWN and self.direction != "up" and self.check_x_axis()):
             self.direction = "down"
 
     def move(self):
@@ -124,10 +147,42 @@ class Snake:
                 self.positions[length - 1 - i].x = self.positions[length - 2 - i].x
                 self.positions[length - 1 - i].y = self.positions[length - 2 - i].y
 
-        # print self.positions
-
         for segment in self.segments.sprites():
             segment.rect = pygame.Rect(self.positions[segment.seg_id].x, self.positions[segment.seg_id].y, 10, 10)
+
+        self.snake_head.sprites()[0].rect = pygame.Rect(self.positions[0].x, self.positions[0].y, 10, 10)
+
+    def check_x_axis(self):
+        """Check whether or not the entire snake exists on the same x axis. If it is, return false, and the snake cannot turn
+        up or down."""
+        check_list = []
+        x_pos = self.positions[0].x
+        for i in range(1, len(self.positions)):
+            check_list.append(x_pos == self.positions[i].x)
+        if all(check_list):
+            return False
+        else:
+            return True
+
+    def check_y_axis(self):
+        """Check whether or not the entire snake exists on the same y axis. If it is, return false, and the snake cannot turn
+        left or right."""
+        check_list = []
+        y_pos = self.positions[0].y
+        for i in range(1, len(self.positions)):
+            check_list.append(y_pos == self.positions[i].y)
+        if all(check_list):
+            return False
+        else:
+            return True
+
+    def grow(self):
+        """Grow the snake by one segment."""
+        self.segments.add(SnakeSegment(self.current_size, pygame.Rect(0, 0, 10, 10)))
+        self.positions.append(SegmentPosition(0, 0))
+        self.current_size += 1
+
+
 
 
 class SegmentPosition:
