@@ -121,8 +121,8 @@ class SnakeMain:
                 if event.type == KEYDOWN:
                     if event.key == K_q:
                         sys.exit()
-
-            
+                    elif event.key == K_r:
+                        self.main_loop()
 
     def generate_pellet(self):
         while 1:
@@ -153,7 +153,7 @@ class SnakeMain:
 
     def render_quit_message(self):
         font = pygame.font.SysFont(None, 24)
-        return font.render("Press Q to exit.", True, (77, 146, 28))
+        return font.render("Press Q to exit, R to restart.", True, (77, 146, 28))
                     
 
 
