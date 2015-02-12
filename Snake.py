@@ -2,18 +2,13 @@
 **************
     SNAKE
 **************
-A remake of the classic phone game, written in Python using the Pygame library.
-
-Credits: load_image and load_sound helper functions taken (for convenience) from:
-http://www.pygame.org/docs/tut/chimp/ChimpLineByLine.html (found in helper.py)
-
-All remaining images and code: Marcus Paxton
 
 Marcus Paxton, February 2015
 
 """
 import os, sys
 import pygame
+import random
 from pygame.locals import *
 from helpers import *
 
@@ -27,9 +22,10 @@ class SnakeMain:
         pygame.init()
         self.width = width
         self.height = height
+        self.totalheight = height + 50
 
         """Create the game screen"""
-        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.screen = pygame.display.set_mode((self.width, self.totalheight))
 
     def main_loop(self):
         self.load_sprites()
@@ -38,6 +34,7 @@ class SnakeMain:
         self.background = pygame.Surface(self.screen.get_size())
         self.background = self.background.convert()
         self.background.fill((0,0,0))
+        self.score = 0
 
         while 1:
 
@@ -58,12 +55,15 @@ class SnakeMain:
             """make the snake move depending on the direction of the Snake Class"""
             self.snake.move()
             self.test_collision()
+            self.render_score()
 
-            """TODO: Generate pellet position (need to load pellet sprite as well)"""
             self.screen.blit(self.background, (0,0))
+            self.screen.blit(self.render_score(), pygame.Rect(0, 480, 50, 640))
             self.walls.draw(self.screen)
             self.snake.snake_head.draw(self.screen)
             self.snake.segments.draw(self.screen)
+            self.pellets.draw(self.screen)
+
             pygame.display.flip()
             self.clock.tick(24)
 
@@ -88,12 +88,22 @@ class SnakeMain:
                 if i == 0 or j == 0 or i == width_divs - 1 or j == height_divs - 1:
                     self.walls.add(Wall(pygame.Rect(i * 10, j * 10, 10, 10)))
 
+        """Load in pellet group"""
+        self.pellets = pygame.sprite.Group()
+        self.pellets.add(self.generate_pellet())
+
+
     def test_collision(self):
         """Test for collision with walls, as well as other parts of the snake"""
         if len(pygame.sprite.groupcollide(self.snake.snake_head, self.walls, False, False)) > 0:
             self.end_game(1)
         elif len(pygame.sprite.groupcollide(self.snake.snake_head, self.snake.segments, False, False)) > 0:
             self.end_game(2)
+        elif len(pygame.sprite.groupcollide(self.snake.snake_head, self.pellets, False, True)) > 0:
+            self.score += 1
+            self.pellets.add(self.generate_pellet())
+            self.snake.grow()
+
 
     def end_game(self, end_code):
         if end_code == 1:
@@ -101,6 +111,25 @@ class SnakeMain:
         elif end_code == 2:
             print "Snake hit"
         sys.exit()
+
+    def generate_pellet(self):
+        while 1:
+            x_coord = random.randrange(1, (self.width / 10) - 1) * 10
+            y_coord = random.randrange(1, (self.height / 10) - 1) * 10
+
+            collision_list = []
+            for position in self.snake.positions:
+                collision_list.append(position.x == x_coord and position.y == y_coord)
+
+            if not all(collision_list):
+                return Pellet(pygame.Rect(x_coord, y_coord, 10, 10))
+
+    def render_score(self):
+        score_text = "Score: " + str(self.score)
+        font = pygame.font.SysFont(None, 76)
+        return font.render(score_text, True, (77, 146, 28))
+                    
+
 
 class Snake:
     def __init__(self, snake_head, snake_segments, segment_positions):
@@ -178,11 +207,11 @@ class Snake:
 
     def grow(self):
         """Grow the snake by one segment."""
-        self.segments.add(SnakeSegment(self.current_size, pygame.Rect(0, 0, 10, 10)))
+
+        """Set the segment to appear off-screen first, will be adjusted in the next frame"""
+        self.segments.add(SnakeSegment(self.current_size, pygame.Rect(1024, 1024, 10, 10)))
         self.positions.append(SegmentPosition(0, 0))
         self.current_size += 1
-
-
 
 
 class SegmentPosition:
@@ -214,6 +243,13 @@ class Wall(pygame.sprite.Sprite):
         self.image, self.rect = load_image('wall.png')
         if rect != None:
             self.rect = rect
+
+class Pellet(pygame.sprite.Sprite):
+
+    def __init__(self, rect):
+        pygame.sprite.Sprite.__init__(self)
+        self.image, self.rect = load_image('pellet.png', -1)
+        self.rect = rect
 
 
 if __name__ == "__main__":
