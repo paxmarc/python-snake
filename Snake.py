@@ -22,22 +22,26 @@ class SnakeMain:
         pygame.init()
         self.width = width
         self.height = height
+        
+        """Add extra height to the display for score/endgame text"""
         self.totalheight = height + 50
 
         """Create the game screen"""
         self.screen = pygame.display.set_mode((self.width, self.totalheight))
 
     def main_loop(self):
+        """Main game loop, manages rendering and keystrokes for each tick"""
         self.load_sprites()
         self.clock = pygame.time.Clock()
 
+        """Initialize background"""
         self.background = pygame.Surface(self.screen.get_size())
         self.background = self.background.convert()
         self.background.fill((0,0,0))
         self.score = 0
 
         while 1:
-
+            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
@@ -50,9 +54,12 @@ class SnakeMain:
                     elif event.key == K_q ^ KMOD_LCTRL:
                         sys.exit()
 
-            """make the snake move depending on the direction of the Snake Class"""
+            """make the snake move depending on the direction of the Snake Class,
+                process any collisions"""
             self.snake.move()
             self.test_collision()
+            
+            """render everything"""
             self.render_score()
 
             self.screen.blit(self.background, (0,0))
@@ -97,6 +104,7 @@ class SnakeMain:
             self.end_game(1)
         elif len(pygame.sprite.groupcollide(self.snake.snake_head, self.snake.segments, False, False)) > 0:
             self.end_game(2)
+        """Test for collision with a pellet, update size and score appropriately"""    
         elif len(pygame.sprite.groupcollide(self.snake.snake_head, self.pellets, False, True)) > 0:
             self.score += 1
             self.pellets.add(self.generate_pellet())
@@ -191,7 +199,8 @@ class Snake:
             move_y = 10
 
         length = len(self.positions)
-
+        
+        """Update positions of segments, based on position of preceding segment in the list"""
         for i in range(0, length):
             if i == length - 1:
                 self.positions[length - 1 - i].x += move_x
@@ -199,7 +208,7 @@ class Snake:
             elif len(self.positions) - 1 - i > 0:
                 self.positions[length - 1 - i].x = self.positions[length - 2 - i].x
                 self.positions[length - 1 - i].y = self.positions[length - 2 - i].y
-
+        """Update the sprite rect positions using the positions array at the corresponding id's index"""
         for segment in self.segments.sprites():
             segment.rect = pygame.Rect(self.positions[segment.seg_id].x, self.positions[segment.seg_id].y, 10, 10)
 
@@ -231,7 +240,6 @@ class Snake:
 
     def grow(self):
         """Grow the snake by one segment."""
-
         """Set the segment to appear off-screen first, will be adjusted in the next frame"""
         self.segments.add(SnakeSegment(self.current_size, pygame.Rect(1024, 1024, 10, 10)))
         self.positions.append(SegmentPosition(0, 0))
